@@ -4,8 +4,10 @@ const cron = require('node-cron'); // Importation de node-cron pour la planifica
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const token = process.env.DISCORD_TOKEN;
+const clientId = process.env.CLIENT_ID;
 const domainName = process.env.DOMAIN_NAME; 
 
 const client = new Client({
@@ -15,23 +17,42 @@ const client = new Client({
 
 // Liste de sujets automatiques pour les débats
 const sujetsAutomatiques = [
-    "La nécessité d'une éducation gratuite et accessible à tous.",
-    "Les impacts de la technologie sur la vie sociale.",
-    "Le rôle des mouvements sociaux dans la lutte pour les droits civiques.",
-    "La place de l'art dans la contestation politique.",
-    "Les avantages et inconvénients de la démocratie directe.",
-    "La gestion des ressources naturelles et la durabilité.",
-    "La responsabilité des individus face aux crises climatiques.",
-    "La santé mentale et son importance dans nos sociétés.",
-    "Les dangers de la désinformation dans les médias modernes.",
-    "L'impact de l'immigration sur les sociétés contemporaines.",
-    "Les droits des travailleurs à l'ère du télétravail.",
-    "Les alternatives à la prison dans le système judiciaire.",
-    "Le rôle des femmes dans les mouvements de changement social.",
-    "Les défis des communautés autochtones dans la société moderne.",
-    "Comment favoriser l'entraide et la solidarité au sein des communautés."
+    // Vos sujets ici...
+    "1. L'avenir du travail à l'ère de l'automatisation : Quel impact l'automatisation a-t-elle sur l'emploi et le marché du travail ?",
+    // Ajoutez d'autres sujets...
 ];
 
+// Fonction pour générer les certificats SSL avec certbot
+function generateSSLCertificates() {
+    console.log('Génération des certificats SSL avec Certbot...');
+    try {
+        execSync(`sudo certbot certonly --standalone -d ${domainName} --non-interactive --agree-tos --email your-email@example.com`);
+        console.log('Certificats SSL générés avec succès.');
+    } catch (error) {
+        console.error('Erreur lors de la génération des certificats SSL:', error.message);
+        process.exit(1); // Arrêter le processus si l'erreur se produit
+    }
+}
+
+// Vérification de l'existence des fichiers SSL
+const keyPath = `/etc/letsencrypt/live/${domainName}/privkey.pem`;
+const certPath = `/etc/letsencrypt/live/${domainName}/fullchain.pem`;
+
+if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+    generateSSLCertificates(); // Générer les certificats si absents
+}
+
+// Lecture des fichiers SSL
+const options = {
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath),
+};
+
+// Démarrer le serveur HTTPS
+const server = https.createServer(options, express());
+server.listen(3000, () => {
+    console.log('Le serveur HTTPS est en ligne sur le port 3000');
+});
 
 // Enregistrement des slash commandes globales
 const commands = [
@@ -54,9 +75,8 @@ const rest = new REST({ version: '10' }).setToken(token);
 (async () => {
     try {
         console.log('Enregistrement des commandes slash globales...');
-        // Enregistrer les commandes pour tous les serveurs (globalement)
         await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID), // Utilisez la variable d'environnement si nécessaire
+            Routes.applicationCommands(clientId),
             { body: commands },
         );
 
@@ -65,20 +85,6 @@ const rest = new REST({ version: '10' }).setToken(token);
         console.error(error);
     }
 })();
-
-// Création d'un serveur HTTPS
-const app = express();
-
-const options = {
-    key: fs.readFileSync(`/etc/letsencrypt/live/${domainName}/privkey.pem`),
-    cert: fs.readFileSync(`/etc/letsencrypt/live/${domainName}/fullchain.pem`),
-};
-
-// Démarrer le serveur HTTPS
-const server = https.createServer(options, app);
-server.listen(3000, () => {
-    console.log('Le serveur HTTPS est en ligne sur le port 3000');
-});
 
 client.once('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
@@ -142,3 +148,4 @@ client.on('interactionCreate', async interaction => {
 });
 
 client.login(token);
+
