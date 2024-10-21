@@ -1,25 +1,23 @@
-
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, REST, Routes, InteractionType } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
-const express = require('express'); // Ajouter express pour le serveur HTTP
-const bodyParser = require('body-parser'); // Pour parser les données JSON
+const express = require('express');
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
-const USERNAME = process.env.USERNAME; // Récupérer le nom d'utilisateur depuis les variables d'environnement
-const PASSWORD = process.env.PASSWORD; // Récupérer le mot de passe depuis les variables d'environnement
+const username = process.env.USERNAME;
+const password = process.env.PASSWORD;
 
+const app = express();
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
     partials: [Partials.Channel],
 });
 
-
-/ Liste de sujets automatiques pour les débats
+// Liste de sujets automatiques pour les débats
 const sujetsAutomatiques = [
-    "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+   "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
@@ -119,7 +117,6 @@ const sujetsAutomatiques = [
     "98. Les expériences de coopératives : Un modèle à promouvoir ?",
     "99. Le rôle des mouvements de base dans les révolutions : Quels enseignements ?",
     "100. La question de la liberté d'expression dans une société communiste : Quels enjeux ?",
-
 ];
 
 // Exemple de fichier pour stocker la configuration
@@ -201,32 +198,24 @@ client.once('ready', () => {
     });
 });
 
-// Démarrer un serveur HTTP pour gérer les requêtes externes
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(bodyParser.json()); // Pour parser les données JSON
-
-// Middleware pour vérifier le login
+// Middleware pour vérifier les informations d'identification
 app.use((req, res, next) => {
     const auth = req.headers['authorization'];
-    if (auth) {
-        const [username, password] = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
-        if (username === USERNAME && password === PASSWORD) {
-            next(); // Autoriser l'accès si les identifiants sont corrects
-        } else {
-            res.status(401).send('Unauthorized'); // Refuser l'accès si les identifiants sont incorrects
-        }
-    } else {
-        res.status(401).send('Unauthorized'); // Refuser l'accès si aucun identifiant n'est fourni
+    if (!auth) return res.sendStatus(401);
+
+    const [user, pass] = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
+    if (user === username && pass === password) {
+        return next();
     }
+    res.sendStatus(403);
 });
 
-// Exemple de route pour vérifier que le bot est en ligne
+// Point de terminaison /ping
 app.get('/ping', (req, res) => {
-    res.send('Bot est en ligne !');
+    res.send('Le bot est en ligne!');
 });
 
+// Gestion des interactions
 client.on('interactionCreate', async interaction => {
     if (interaction.type !== InteractionType.ApplicationCommand) return;
 
@@ -234,25 +223,23 @@ client.on('interactionCreate', async interaction => {
         const sujet = interaction.options.getString('sujet');
         const canal = interaction.options.getChannel('canal') || interaction.channel;
 
-        // Envoyer le message dans le canal spécifié
         await canal.send(`Nouveau débat : **${sujet}**`);
         await interaction.reply({ content: `Débat créé dans ${canal.name} : **${sujet}**`, ephemeral: true });
     }
 
     if (interaction.commandName === 'configurerdebats') {
         const canal = interaction.options.getChannel('canal');
-
-        // Sauvegarder l'ID du canal dans la configuration
         config.debateChannelId = canal.id;
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
         await interaction.reply({ content: `Le canal pour les débats a été configuré : ${canal.name}`, ephemeral: true });
     }
 });
 
-// Démarrer le serveur Express
-app.listen(PORT, () => {
-    console.log(`Serveur en cours d'exécution sur http://localhost:${PORT}`);
-});
-
-// Connecter le bot à Discord
+// Démarrage du bot
 client.login(token);
+
+// Démarrage du serveur HTTP
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Serveur en cours d'exécution sur le port ${PORT}`);
+});
