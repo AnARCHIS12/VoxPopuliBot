@@ -184,7 +184,7 @@ client.once('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
 
     // Planification d'un débat automatique toutes les 6 heures
-    cron.schedule('0 */6 * * *', async () => {
+    cron.schedule('0 */3 * * *', async () => {
         const guild = client.guilds.cache.first();
         if (!guild || !config.debateChannelId) return;
 
