@@ -1,10 +1,15 @@
+
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, REST, Routes, InteractionType } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
+const express = require('express'); // Ajouter express pour le serveur HTTP
+const bodyParser = require('body-parser'); // Pour parser les données JSON
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
+const USERNAME = process.env.USERNAME; // Récupérer le nom d'utilisateur depuis les variables d'environnement
+const PASSWORD = process.env.PASSWORD; // Récupérer le mot de passe depuis les variables d'environnement
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
@@ -12,7 +17,7 @@ const client = new Client({
 });
 
 
-// Liste de sujets automatiques pour les débats
+/ Liste de sujets automatiques pour les débats
 const sujetsAutomatiques = [
     "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
@@ -136,7 +141,7 @@ const commands = [
         options: [
             {
                 name: 'sujet',
-                type: 3,
+                type: 3, // STRING type
                 description: 'Le sujet du débat',
                 required: true,
             },
@@ -196,47 +201,58 @@ client.once('ready', () => {
     });
 });
 
+// Démarrer un serveur HTTP pour gérer les requêtes externes
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(bodyParser.json()); // Pour parser les données JSON
+
+// Middleware pour vérifier le login
+app.use((req, res, next) => {
+    const auth = req.headers['authorization'];
+    if (auth) {
+        const [username, password] = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
+        if (username === USERNAME && password === PASSWORD) {
+            next(); // Autoriser l'accès si les identifiants sont corrects
+        } else {
+            res.status(401).send('Unauthorized'); // Refuser l'accès si les identifiants sont incorrects
+        }
+    } else {
+        res.status(401).send('Unauthorized'); // Refuser l'accès si aucun identifiant n'est fourni
+    }
+});
+
+// Exemple de route pour vérifier que le bot est en ligne
+app.get('/ping', (req, res) => {
+    res.send('Bot est en ligne !');
+});
+
 client.on('interactionCreate', async interaction => {
     if (interaction.type !== InteractionType.ApplicationCommand) return;
 
     if (interaction.commandName === 'creerdebat') {
         const sujet = interaction.options.getString('sujet');
-        const canal = interaction.options.getChannel('canal');
+        const canal = interaction.options.getChannel('canal') || interaction.channel;
 
-        const guild = interaction.guild;
-
-        // Chercher ou créer la catégorie "Débats"
-        let category = guild.channels.cache.find(c => c.name === 'Débats' && c.type === 4);
-        if (!category) {
-            category = await guild.channels.create({
-                name: 'Débats',
-                type: 4,
-            });
-        }
-
-        // Si aucun canal n'est spécifié, utilisez le canal par défaut
-        const debatChannel = canal || await guild.channels.create({
-            name: `débat-${sujet.split(':')[0]}`,
-            type: 0,
-            parent: category.id,
-        });
-
-        await debatChannel.send(`Nouveau débat créé : **${sujet}**`);
-        await interaction.reply(`Débat créé : ${debatChannel}`);
+        // Envoyer le message dans le canal spécifié
+        await canal.send(`Nouveau débat : **${sujet}**`);
+        await interaction.reply({ content: `Débat créé dans ${canal.name} : **${sujet}**`, ephemeral: true });
     }
 
     if (interaction.commandName === 'configurerdebats') {
         const canal = interaction.options.getChannel('canal');
 
-        // Mettre à jour la configuration
+        // Sauvegarder l'ID du canal dans la configuration
         config.debateChannelId = canal.id;
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-
-        await interaction.reply(`Le canal de débat a été configuré sur : ${canal}`);
+        await interaction.reply({ content: `Le canal pour les débats a été configuré : ${canal.name}`, ephemeral: true });
     }
 });
 
-client.login(token);
+// Démarrer le serveur Express
+app.listen(PORT, () => {
+    console.log(`Serveur en cours d'exécution sur http://localhost:${PORT}`);
+});
 
+// Connecter le bot à Discord
 client.login(token);
-
