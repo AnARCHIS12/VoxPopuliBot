@@ -23,12 +23,13 @@ const sujetsAutomatiques = [
     "La gestion des ressources naturelles et la durabilité.",
     "La responsabilité des individus face aux crises climatiques.",
     "La santé mentale et son importance dans nos sociétés.",
-    "Les dangers de la désinformation dans les médias modernes."
+    "Les dangers de la désinformation dans les médias modernes.",
+    "L'impact de l'immigration sur les sociétés contemporaines.",
     "Les droits des travailleurs à l'ère du télétravail.",
     "Les alternatives à la prison dans le système judiciaire.",
     "Le rôle des femmes dans les mouvements de changement social.",
     "Les défis des communautés autochtones dans la société moderne.",
-    "Comment favoriser l'entraide et la solidarité au sein des communautés.",
+    "Comment favoriser l'entraide et la solidarité au sein des communautés."
 ];
 
 
