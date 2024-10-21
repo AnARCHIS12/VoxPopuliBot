@@ -30,7 +30,7 @@ const sujetsAutomatiques = [
     "Les défis des communautés autochtones dans la société moderne.",
     "Comment favoriser l'entraide et la solidarité au sein des communautés.",
 ];
-];
+
 
 // Enregistrement des slash commandes globales
 const commands = [
