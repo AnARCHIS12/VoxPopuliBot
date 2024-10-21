@@ -17,7 +17,7 @@ const client = new Client({
 
 // Liste de sujets automatiques pour les débats
 const sujetsAutomatiques = [
-   "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+    "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
@@ -127,7 +127,7 @@ let config = {};
 if (fs.existsSync(CONFIG_FILE)) {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
 } else {
-    config = { debateChannelId: null };
+    config = { debateChannelId: null, pingChannelId: null }; // Ajout de pingChannelId
 }
 
 // Commandes pour le bot
@@ -158,6 +158,18 @@ const commands = [
                 name: 'canal',
                 type: 7, // CHANNEL type
                 description: 'Le salon à configurer pour les débats',
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'configurerping',
+        description: 'Configure le salon pour les pings automatiques',
+        options: [
+            {
+                name: 'canal',
+                type: 7, // CHANNEL type
+                description: 'Le salon à configurer pour les pings',
                 required: true,
             },
         ],
@@ -201,6 +213,18 @@ client.once('ready', () => {
             console.log(`Débat automatique créé : ${sujet}`);
         }
     });
+
+    // Planification d'un ping automatique toutes les 5 minutes
+    cron.schedule('*/5 * * * *', async () => {
+        const guild = client.guilds.cache.first();
+        if (!guild || !config.pingChannelId) return;
+
+        const pingChannel = guild.channels.cache.get(config.pingChannelId);
+        if (pingChannel) {
+            await pingChannel.send('Ping ! Le bot est toujours en ligne !');
+            console.log('Ping envoyé au canal configuré.');
+        }
+    });
 });
 
 // Événement pour la réception des interactions
@@ -227,6 +251,12 @@ client.on('interactionCreate', async (interaction) => {
 
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config));
         await interaction.reply({ content: `Le canal pour les débats a été configuré : ${canal.name}`, ephemeral: true });
+    } else if (commandName === 'configurerping') {
+        const canal = options.getChannel('canal');
+        config.pingChannelId = canal.id;
+
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config));
+        await interaction.reply({ content: `Le canal pour les pings a été configuré : ${canal.name}`, ephemeral: true });
     }
 });
 
