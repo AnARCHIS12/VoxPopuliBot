@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, REST, Routes, InteractionType } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, REST, Routes } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
 const express = require('express');
@@ -17,7 +17,7 @@ const client = new Client({
 
 // Liste de sujets automatiques pour les débats
 const sujetsAutomatiques = [
-   "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+      "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
@@ -192,10 +192,42 @@ client.once('ready', () => {
         const debatChannel = guild.channels.cache.get(config.debateChannelId);
 
         if (debatChannel) {
-            await debatChannel.send(`Nouveau débat créé automatiquement : **${sujet}**`);
+            const message = await debatChannel.send(`Nouveau débat créé automatiquement : **${sujet}**`);
+            // Création d'un fil pour le débat sans archivage automatique
+            const thread = await message.startThread({
+                name: `Débat sur : ${sujet}`,
+                autoArchiveDuration: 0, // Pas d'archivage automatique
+            });
             console.log(`Débat automatique créé : ${sujet}`);
         }
     });
+});
+
+// Événement pour la réception des interactions
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand()) return;
+
+    const { commandName, options } = interaction;
+
+    if (commandName === 'creerdebat') {
+        const sujet = options.getString('sujet');
+        const canal = options.getChannel('canal') || interaction.channel;
+
+        const message = await canal.send(`Nouveau débat : **${sujet}**`);
+        // Création d'un fil pour le débat sans archivage automatique
+        const thread = await message.startThread({
+            name: `Débat sur : ${sujet}`,
+            autoArchiveDuration: 0, // Pas d'archivage automatique
+        });
+
+        await interaction.reply({ content: 'Débat créé avec succès !', ephemeral: true });
+    } else if (commandName === 'configurerdebats') {
+        const canal = options.getChannel('canal');
+        config.debateChannelId = canal.id;
+
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config));
+        await interaction.reply({ content: `Le canal pour les débats a été configuré : ${canal.name}`, ephemeral: true });
+    }
 });
 
 // Middleware pour vérifier les informations d'identification
@@ -204,42 +236,22 @@ app.use((req, res, next) => {
     if (!auth) return res.sendStatus(401);
 
     const [user, pass] = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
-    if (user === username && pass === password) {
-        return next();
-    }
-    res.sendStatus(403);
+    if (user !== username || pass !== password) return res.sendStatus(403);
+
+    next();
 });
 
-// Point de terminaison /ping
-app.get('/ping', (req, res) => {
-    res.send('Le bot est en ligne!');
+// Endpoint pour tester si le bot fonctionne
+app.get('/status', (req, res) => {
+    res.send('Le bot est en ligne !');
 });
 
-// Gestion des interactions
-client.on('interactionCreate', async interaction => {
-    if (interaction.type !== InteractionType.ApplicationCommand) return;
-
-    if (interaction.commandName === 'creerdebat') {
-        const sujet = interaction.options.getString('sujet');
-        const canal = interaction.options.getChannel('canal') || interaction.channel;
-
-        await canal.send(`Nouveau débat : **${sujet}**`);
-        await interaction.reply({ content: `Débat créé dans ${canal.name} : **${sujet}**`, ephemeral: true });
-    }
-
-    if (interaction.commandName === 'configurerdebats') {
-        const canal = interaction.options.getChannel('canal');
-        config.debateChannelId = canal.id;
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        await interaction.reply({ content: `Le canal pour les débats a été configuré : ${canal.name}`, ephemeral: true });
-    }
-});
-
-// Démarrage du bot
-client.login(token);
-
-// Démarrage du serveur HTTP
+// Démarrage du serveur Express
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Serveur en cours d'exécution sur le port ${PORT}`);
+    console.log(`Serveur Express démarré sur le port ${PORT}`);
 });
+
+// Connexion du bot à Discord
+client.login(token);
+
