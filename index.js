@@ -196,7 +196,7 @@ client.once('ready', () => {
             // Création d'un fil pour le débat sans archivage automatique
             const thread = await message.startThread({
                 name: `Débat sur : ${sujet}`,
-                autoArchiveDuration: 0, // Pas d'archivage automatique
+                autoArchiveDuration: 10080, // 7 jours
             });
             console.log(`Débat automatique créé : ${sujet}`);
         }
