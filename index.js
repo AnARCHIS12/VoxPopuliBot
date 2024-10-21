@@ -1,19 +1,19 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, REST, Routes, InteractionType } = require('discord.js');
-const cron = require('node-cron'); // Importation de node-cron pour la planification
-const express = require('express');
+const cron = require('node-cron');
+const fs = require('fs');
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
-const domainName = process.env.DOMAIN_NAME; 
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
     partials: [Partials.Channel],
 });
 
+
 // Liste de sujets automatiques pour les débats
-    const sujetsAutomatiques = [
+const sujetsAutomatiques = [
     "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
@@ -117,15 +117,18 @@ const client = new Client({
 
 ];
 
-// Démarrer le serveur Express
-const app = express();
-const PORT = process.env.PORT || 3000; // Utiliser le port défini par Render
+// Exemple de fichier pour stocker la configuration
+const CONFIG_FILE = 'config.json';
 
-app.listen(PORT, () => {
-    console.log(`Le serveur est en ligne sur le port ${PORT}`);
-});
+// Chargement de la configuration si elle existe
+let config = {};
+if (fs.existsSync(CONFIG_FILE)) {
+    config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+} else {
+    config = { debateChannelId: null };
+}
 
-// Enregistrement des slash commandes globales
+// Commandes pour le bot
 const commands = [
     {
         name: 'creerdebat',
@@ -133,8 +136,26 @@ const commands = [
         options: [
             {
                 name: 'sujet',
-                type: 3, // STRING type
+                type: 3,
                 description: 'Le sujet du débat',
+                required: true,
+            },
+            {
+                name: 'canal',
+                type: 7, // CHANNEL type
+                description: 'Le canal où envoyer le débat',
+                required: false,
+            },
+        ],
+    },
+    {
+        name: 'configurerdebats',
+        description: 'Configure le salon pour les débats automatiques et manuels',
+        options: [
+            {
+                name: 'canal',
+                type: 7, // CHANNEL type
+                description: 'Le salon à configurer pour les débats',
                 required: true,
             },
         ],
@@ -162,31 +183,16 @@ client.once('ready', () => {
 
     // Planification d'un débat automatique toutes les 6 heures
     cron.schedule('0 */6 * * *', async () => {
-        const guild = client.guilds.cache.first(); // Sélectionner le premier serveur (ou modifier pour un serveur spécifique)
-        if (!guild) return;
+        const guild = client.guilds.cache.first();
+        if (!guild || !config.debateChannelId) return;
 
-        // Sélectionner un sujet aléatoire pour le débat
         const sujet = sujetsAutomatiques[Math.floor(Math.random() * sujetsAutomatiques.length)];
+        const debatChannel = guild.channels.cache.get(config.debateChannelId);
 
-        // Chercher ou créer la catégorie "Débats"
-        let category = guild.channels.cache.find(c => c.name === 'Débats' && c.type === 4); // Type 4 pour Catégorie
-        if (!category) {
-            category = await guild.channels.create({
-                name: 'Débats',
-                type: 4, // Catégorie
-            });
+        if (debatChannel) {
+            await debatChannel.send(`Nouveau débat créé automatiquement : **${sujet}**`);
+            console.log(`Débat automatique créé : ${sujet}`);
         }
-
-        // Créer un salon de texte pour le débat
-        const debatChannel = await guild.channels.create({
-            name: `débat-${sujet.split(':')[0]}`, // Utiliser juste le numéro pour le nom du channel
-            type: 0, // Salon textuel
-            parent: category.id,
-        });
-
-        // Envoyer un message dans le salon du débat
-        await debatChannel.send(`Nouveau débat créé automatiquement : **${sujet}**`);
-        console.log(`Débat automatique créé : ${sujet}`);
     });
 });
 
@@ -195,28 +201,42 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'creerdebat') {
         const sujet = interaction.options.getString('sujet');
+        const canal = interaction.options.getChannel('canal');
+
         const guild = interaction.guild;
 
         // Chercher ou créer la catégorie "Débats"
-        let category = guild.channels.cache.find(c => c.name === 'Débats' && c.type === 4); // Type 4 pour Catégorie
+        let category = guild.channels.cache.find(c => c.name === 'Débats' && c.type === 4);
         if (!category) {
             category = await guild.channels.create({
                 name: 'Débats',
-                type: 4, // Catégorie
+                type: 4,
             });
         }
 
-        // Créer un salon de texte pour le débat
-        const debatChannel = await guild.channels.create({
-            name: `débat-${sujet.split(':')[0]}`, // Utiliser juste le numéro pour le nom du channel
-            type: 0, // Salon textuel
+        // Si aucun canal n'est spécifié, utilisez le canal par défaut
+        const debatChannel = canal || await guild.channels.create({
+            name: `débat-${sujet.split(':')[0]}`,
+            type: 0,
             parent: category.id,
         });
 
-        // Répondre à l'interaction
+        await debatChannel.send(`Nouveau débat créé : **${sujet}**`);
         await interaction.reply(`Débat créé : ${debatChannel}`);
     }
+
+    if (interaction.commandName === 'configurerdebats') {
+        const canal = interaction.options.getChannel('canal');
+
+        // Mettre à jour la configuration
+        config.debateChannelId = canal.id;
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+        await interaction.reply(`Le canal de débat a été configuré sur : ${canal}`);
+    }
 });
+
+client.login(token);
 
 client.login(token);
 
