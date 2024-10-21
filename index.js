@@ -17,7 +17,7 @@ const client = new Client({
 
 // Liste de sujets automatiques pour les débats
 const sujetsAutomatiques = [
-      "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+   "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
@@ -184,7 +184,7 @@ client.once('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
 
     // Planification d'un débat automatique toutes les 6 heures
-    cron.schedule('0 */3 * * *', async () => {
+    cron.schedule('0 */6 * * *', async () => {
         const guild = client.guilds.cache.first();
         if (!guild || !config.debateChannelId) return;
 
@@ -193,7 +193,7 @@ client.once('ready', () => {
 
         if (debatChannel) {
             const message = await debatChannel.send(`Nouveau débat créé automatiquement : **${sujet}**`);
-            // Création d'un fil pour le débat sans archivage automatique
+            // Création d'un fil pour le débat avec une durée d'archivage de 7 jours
             const thread = await message.startThread({
                 name: `Débat sur : ${sujet}`,
                 autoArchiveDuration: 10080, // 7 jours
@@ -214,10 +214,10 @@ client.on('interactionCreate', async (interaction) => {
         const canal = options.getChannel('canal') || interaction.channel;
 
         const message = await canal.send(`Nouveau débat : **${sujet}**`);
-        // Création d'un fil pour le débat sans archivage automatique
+        // Création d'un fil pour le débat avec une durée d'archivage de 7 jours
         const thread = await message.startThread({
             name: `Débat sur : ${sujet}`,
-            autoArchiveDuration: 0, // Pas d'archivage automatique
+            autoArchiveDuration: 10080, // 7 jours
         });
 
         await interaction.reply({ content: 'Débat créé avec succès !', ephemeral: true });
@@ -254,4 +254,3 @@ app.listen(PORT, () => {
 
 // Connexion du bot à Discord
 client.login(token);
-
