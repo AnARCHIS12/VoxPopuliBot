@@ -3,7 +3,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, REST, Routes, EmbedBuilder } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
-
+const axios = require('axios');
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 
