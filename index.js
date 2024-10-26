@@ -30,7 +30,7 @@ app.listen(PORT, () => {
 function createRulesEmbed() {
     return new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('**Règles du Serveur Anarchiste**')
+        .setTitle('**ⒶRègles De la ligne noireⒶ **')
         .setDescription(`
             1. **Liberté d'expression** : Chaque membre est libre de s'exprimer tant que cela ne nuit pas aux autres.
             2. **Solidarité** : Soutenons-nous mutuellement dans nos luttes et aspirations.
@@ -40,7 +40,7 @@ function createRulesEmbed() {
             6. **Refus de la violence** : La violence et l'intimidation n'ont pas leur place ici.
             7. **Éducation et apprentissage** : Encourageons l'échange de connaissances et d'expériences.
             8. **Responsabilité collective** : Chacun est responsable de maintenir un environnement sûr et inclusif.
-            9. **Autonomie** : Encourageons l'initiative individuelle tout en respectant le bien commun.
+            9. **Autonomie et collectif ** : Encourageons l'initiative individuelle et collectif tout en respectant le bien commun.
             10. **Créativité** : Valorisons l'innovation et la créativité dans nos interactions et nos projets.
         `)
         .setFooter({ 
