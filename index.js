@@ -6,7 +6,8 @@ const axios = require('axios');
 const cron = require('node-cron');
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
-
+const express = require('express');
+const app = express();
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
     partials: [Partials.Channel],
@@ -247,7 +248,18 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.reply({ embeds: [rulesEmbed], ephemeral: true });
     }
 
-    //  d'autres commandes ici...
+ 
+// Définir le port
+const PORT = process.env.PORT || 3000; // Utilise la variable d'environnement PORT ou 3000 par défaut
+
+// Route de base
+app.get('/', (req, res) => {
+    res.send('Bonjour, monde !');
+});
+
+// Démarrer le serveur
+app.listen(PORT, () => {
+    console.log(`Serveur en écoute sur le port ${PORT}`);
 });
 
 // Connexion du bot
