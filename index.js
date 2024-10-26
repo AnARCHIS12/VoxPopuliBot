@@ -1,9 +1,9 @@
 
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, REST, Routes, EmbedBuilder } = require('discord.js');
-const cron = require('node-cron');
 const fs = require('fs');
 const axios = require('axios');
+const cron = require('node-cron');
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 
@@ -11,13 +11,14 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds],
     partials: [Partials.Channel],
 });
+
 // Remplacez par votre URL de bot
-const botUrl = 'https://voxpopulibot.onrender.com'; // URL bot
+const botUrl = 'https://voxpopulibot.onrender.com'; // URL du bot
 
 // Fonction pour envoyer un ping HTTP
 const sendPing = async () => {
     try {
-        await axios.get(botUrl);
+        await axios.head(botUrl); // Envoie une requête HEAD
         console.log('Ping envoyé au serveur.');
     } catch (error) {
         console.error('Erreur lors de l\'envoi du ping:', error);
@@ -32,7 +33,7 @@ client.once('ready', () => {
 });
 
 const sujetsAutomatiques = [
-    "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+     "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
@@ -135,13 +136,13 @@ const sujetsAutomatiques = [
 ];
 
 const CONFIG_FILE = 'config.json';
-let config = {};
+let config = { debateChannelId: null, pingChannelId: null };
+
 if (fs.existsSync(CONFIG_FILE)) {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-} else {
-    config = { debateChannelId: null, pingChannelId: null };
 }
 
+// Configuration des commandes slash
 const commands = [
     {
         name: 'creerdebat',
@@ -193,103 +194,61 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(token);
 
+// Enregistrement des commandes slash globales
 (async () => {
     try {
         console.log('Enregistrement des commandes slash globales...');
-        await rest.put(
-            Routes.applicationCommands(clientId),
-            { body: commands },
-        );
+        await rest.put(Routes.applicationCommands(clientId), { body: commands });
         console.log('Les commandes slash globales ont été enregistrées.');
     } catch (error) {
-        console.error(error);
+        console.error('Erreur lors de l\'enregistrement des commandes:', error);
     }
 })();
 
-client.once('ready', () => {
+client.on('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
 
-    // Cron job pour envoyer un sujet de débat automatique
-    cron.schedule('0 */6 * * *', async () => {
-        const guild = client.guilds.cache.first();
-        if (!guild || !config.debateChannelId) return;
-
-        const sujet = sujetsAutomatiques[Math.floor(Math.random() * sujetsAutomatiques.length)];
-        const debatChannel = guild.channels.cache.get(config.debateChannelId);
-
-        if (debatChannel) {
-            await debatChannel.send(`**Nouveau sujet de débat :** ${sujet}`);
-            console.log('Débat automatique envoyé.');
+    // Exemple de cron job pour envoyer un sujet de débat
+    cron.schedule('0 12 * * *', async () => {
+        const channel = client.channels.cache.get(config.debateChannelId);
+        if (channel) {
+            const sujet = sujetsAutomatiques[Math.floor(Math.random() * sujetsAutomatiques.length)];
+            await channel.send(`Nouveau sujet de débat : ${sujet}`);
         } else {
-            console.log('Débat automatique échoué : Canal introuvable.');
-        }
-    });
-
-    // Cron job pour envoyer un ping automatique
-    cron.schedule('0 */2 * * *', async () => {
-        const guild = client.guilds.cache.first();
-        if (!guild || !config.pingChannelId) return;
-
-        const pingChannel = guild.channels.cache.get(config.pingChannelId);
-
-        if (pingChannel) {
-            await pingChannel.send('**Ping!** Rappel que les débats sont en cours!');
-            console.log('Ping automatique envoyé.');
-        } else {
-            console.log('Ping automatique échoué : Canal introuvable.');
+            console.error('Canal de débat non configuré.');
         }
     });
 });
 
-// Gestion des commandes
+// Ajoute un gestionnaire pour la commande /regles
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
-    const { commandName, options } = interaction;
+    const { commandName } = interaction;
 
-    if (commandName === 'creerdebat') {
-        const sujet = options.getString('sujet');
-        const canal = options.getChannel('canal') || interaction.channel;
-
-        await canal.send(`**Nouveau débat :** ${sujet}`);
-        await interaction.reply({ content: 'Débat créé avec succès!', ephemeral: true });
-    } else if (commandName === 'configurerdebats') {
-        const canal = options.getChannel('canal');
-        config.debateChannelId = canal.id;
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        await interaction.reply({ content: `Canal pour les débats configuré : ${canal.name}`, ephemeral: true });
-    } else if (commandName === 'configurerping') {
-        const canal = options.getChannel('canal');
-        config.pingChannelId = canal.id;
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        await interaction.reply({ content: `Canal pour les pings configuré : ${canal.name}`, ephemeral: true });
-    } else if (commandName === 'regles') {
-        const embed = new EmbedBuilder()
-            .setColor('#FF0000') // Couleur rouge pour l'anarchisme
-            .setTitle('Règles du Serveur')
-            .setDescription('Voici les règles que tous les membres doivent suivre :')
+    if (commandName === 'regles') {
         const rulesEmbed = new EmbedBuilder()
-    .setColor('#FF0000') // Couleur rouge anarchiste
-    .setTitle(' ⒶRègles de la CommunautéⒶ 🌟')
-    .setDescription('Veuillez respecter ces règles pour maintenir une atmosphère positive et constructive.')
-    .addFields(
-        { name: 'Règle 1', value: 'Respect Mutuel : Soyez respectueux envers les autres membres.' },
-        { name: 'Règle 2', value: 'Liberté d\'Expression : Chacun a le droit d\'exprimer ses opinions.' },
-        { name: 'Règle 3', value: 'Confidentialité : Ne partagez pas d\'informations personnelles sans consentement.' },
-        { name: 'Règle 4', value: 'Pas de Spam : Évitez les messages répétitifs ou non pertinents.' },
-        { name: 'Règle 5', value: 'Thèmes Pertinents : Discussions centrées sur l\'anarchisme, la politique, la société et la culture.' },
-        { name: 'Règle 6', value: 'Responsabilité Collective : Chaque membre est responsable de l\'atmosphère du serveur.' },
-        { name: 'Règle 7', value: 'Éducation et Partage : Favorisez l\'échange de connaissances.' },
-        { name: 'Règle 8', value: 'Conséquences des Violations : Discussions et mesures collectives en cas de violations.' },
-        { name: 'Règle 9', value: 'Évolution des Règles : Propositions de changements sont les bienvenues.' },
-        { name: 'Règle 10', value: 'Solidarité et Soutien : Encouragez un environnement de solidarité.' }
-    )
-    .setFooter({ text: 'Ensemble pour une communauté anarchiste forte et solidaire !' });
+            .setColor('#FF0000') // Couleur rouge
+            .setTitle('**Règles du Serveur Anarchiste**')
+            .setDescription(`
+                1. **Liberté d'expression** : Chaque membre est libre de s'exprimer tant que cela ne nuit pas aux autres.
+                2. **Solidarité** : Soutenons-nous mutuellement dans nos luttes et aspirations.
+                3. **Égalité** : Chaque voix compte. Les décisions doivent être prises collectivement.
+                4. **Respect de la vie privée** : Protégeons les informations personnelles et respectons la vie privée de chacun.
+                5. **Participation active** : Engageons-nous dans les discussions et les activités du serveur.
+                6. **Refus de la violence** : La violence et l'intimidation n'ont pas leur place ici.
+                7. **Éducation et apprentissage** : Encourageons l'échange de connaissances et d'expériences.
+                8. **Responsabilité collective** : Chacun est responsable de maintenir un environnement sûr et inclusif.
+                9. **Autonomie** : Encourageons l'initiative individuelle tout en respectant le bien commun.
+                10. **Créativité** : Valorisons l'innovation et la créativité dans nos interactions et nos projets.
+            `)
+            .setFooter({ text: 'Vive l\'anarchie !', iconURL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Anarchy.svg/1024px-Anarchy.svg.png' }); // Icône de pied de page
 
-            .setFooter({ text: 'Rappel : Les débats sont une opportunité d\'apprentissage et de croissance.' });
-
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [rulesEmbed], ephemeral: true });
     }
+
+    //  d'autres commandes ici...
 });
 
+// Connexion du bot
 client.login(token);
