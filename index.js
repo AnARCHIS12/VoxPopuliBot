@@ -17,7 +17,6 @@ const clientId = process.env.CLIENT_ID;
 
 // Your existing sujetsAutomatiques array stays the same
 const sujetsAutomatiques = [
-1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
