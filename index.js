@@ -1,20 +1,38 @@
+
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, REST, Routes, EmbedBuilder } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
-const express = require('express');
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 
-const app = express();
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
     partials: [Partials.Channel],
 });
+// Remplacez par votre URL de bot
+const botUrl = 'https://voxpopulibot.onrender.com'; // URL bot
+
+// Fonction pour envoyer un ping HTTP
+const sendPing = async () => {
+    try {
+        await axios.get(botUrl);
+        console.log('Ping envoyé au serveur.');
+    } catch (error) {
+        console.error('Erreur lors de l\'envoi du ping:', error);
+    }
+};
+
+// Ping toutes les 5 minutes (300000 ms)
+setInterval(sendPing, 300000);
+
+client.once('ready', () => {
+    console.log(`Connecté en tant que ${client.user.tag}`);
+});
 
 const sujetsAutomatiques = [
-"1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+    "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
     "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
     "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
     "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
@@ -191,6 +209,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 client.once('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
 
+    // Cron job pour envoyer un sujet de débat automatique
     cron.schedule('0 */6 * * *', async () => {
         const guild = client.guilds.cache.first();
         if (!guild || !config.debateChannelId) return;
@@ -205,67 +224,72 @@ client.once('ready', () => {
             console.log('Débat automatique échoué : Canal introuvable.');
         }
     });
+
+    // Cron job pour envoyer un ping automatique
+    cron.schedule('0 */2 * * *', async () => {
+        const guild = client.guilds.cache.first();
+        if (!guild || !config.pingChannelId) return;
+
+        const pingChannel = guild.channels.cache.get(config.pingChannelId);
+
+        if (pingChannel) {
+            await pingChannel.send('**Ping!** Rappel que les débats sont en cours!');
+            console.log('Ping automatique envoyé.');
+        } else {
+            console.log('Ping automatique échoué : Canal introuvable.');
+        }
+    });
 });
 
-client.on('interactionCreate', async interaction => {
+// Gestion des commandes
+client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
     const { commandName, options } = interaction;
 
     if (commandName === 'creerdebat') {
         const sujet = options.getString('sujet');
-        const canal = options.getChannel('canal') || client.channels.cache.get(config.debateChannelId);
-        
-        if (canal) {
-            await canal.send(`**Débat :** ${sujet}`);
-            await interaction.reply({ content: 'Débat créé avec succès.', ephemeral: true });
-        } else {
-            await interaction.reply({ content: 'Salon de débat non configuré.', ephemeral: true });
-        }
+        const canal = options.getChannel('canal') || interaction.channel;
 
+        await canal.send(`**Nouveau débat :** ${sujet}`);
+        await interaction.reply({ content: 'Débat créé avec succès!', ephemeral: true });
     } else if (commandName === 'configurerdebats') {
         const canal = options.getChannel('canal');
         config.debateChannelId = canal.id;
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        await interaction.reply(`Salon des débats configuré sur ${canal}`);
-
+        await interaction.reply({ content: `Canal pour les débats configuré : ${canal.name}`, ephemeral: true });
     } else if (commandName === 'configurerping') {
         const canal = options.getChannel('canal');
         config.pingChannelId = canal.id;
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        await interaction.reply(`Salon pour les pings configuré sur ${canal}`);
-
+        await interaction.reply({ content: `Canal pour les pings configuré : ${canal.name}`, ephemeral: true });
     } else if (commandName === 'regles') {
-        await interaction.reply("Règles du serveur 
-  : 1. **Respect Mutuel**  
-   Chaque membre doit traiter les autres avec respect. Les insultes, le harcèlement et les comportements agressifs ne seront pas tolérés. Si vous êtes témoin d'un comportement inapproprié, n'hésitez pas à en parler calmement à la personne concernée.
+        const embed = new EmbedBuilder()
+            .setColor('#FF0000') // Couleur rouge pour l'anarchisme
+            .setTitle('Règles du Serveur')
+            .setDescription('Voici les règles que tous les membres doivent suivre :')
+        const rulesEmbed = new EmbedBuilder()
+    .setColor('#FF0000') // Couleur rouge anarchiste
+    .setTitle(' ⒶRègles de la CommunautéⒶ 🌟')
+    .setDescription('Veuillez respecter ces règles pour maintenir une atmosphère positive et constructive.')
+    .addFields(
+        { name: 'Règle 1', value: 'Respect Mutuel : Soyez respectueux envers les autres membres.' },
+        { name: 'Règle 2', value: 'Liberté d\'Expression : Chacun a le droit d\'exprimer ses opinions.' },
+        { name: 'Règle 3', value: 'Confidentialité : Ne partagez pas d\'informations personnelles sans consentement.' },
+        { name: 'Règle 4', value: 'Pas de Spam : Évitez les messages répétitifs ou non pertinents.' },
+        { name: 'Règle 5', value: 'Thèmes Pertinents : Discussions centrées sur l\'anarchisme, la politique, la société et la culture.' },
+        { name: 'Règle 6', value: 'Responsabilité Collective : Chaque membre est responsable de l\'atmosphère du serveur.' },
+        { name: 'Règle 7', value: 'Éducation et Partage : Favorisez l\'échange de connaissances.' },
+        { name: 'Règle 8', value: 'Conséquences des Violations : Discussions et mesures collectives en cas de violations.' },
+        { name: 'Règle 9', value: 'Évolution des Règles : Propositions de changements sont les bienvenues.' },
+        { name: 'Règle 10', value: 'Solidarité et Soutien : Encouragez un environnement de solidarité.' }
+    )
+    .setFooter({ text: 'Ensemble pour une communauté anarchiste forte et solidaire !' });
 
-2. **Liberté d'Expression**  
-   Chacun a le droit d'exprimer ses opinions. Les débats sont encouragés, mais ils doivent rester constructifs. Si une discussion devient trop tendue, proposez une pause ou un changement de sujet.
+            .setFooter({ text: 'Rappel : Les débats sont une opportunité d\'apprentissage et de croissance.' });
 
-3. **Confidentialité**  
-   Ne partagez pas d'informations personnelles sur vous-même ou sur les autres sans consentement explicite. Respectez la vie privée de chacun.
-
-4. **Pas de Spam**  
-   Évitez de publier des messages répétitifs ou non pertinents. Si vous voyez du spam, signalez-le à la communauté pour qu'elle puisse agir.
-
-5. **Thèmes Pertinents**  
-   Les discussions doivent rester centrées sur des sujets liés à l'anarchisme, à la politique, à la société et à la culture. Si un sujet dérive, n'hésitez pas à le ramener à l'ordre.
-
-6. **Responsabilité Collective**  
-   Chaque membre est responsable de l'atmosphère du serveur. Si vous remarquez un comportement inapproprié, parlez-en avec la personne concernée ou en discutez avec d'autres membres pour trouver une solution.
-
-7. **Éducation et Partage**  
-   Favorisez l'échange de connaissances. Partagez des ressources, des articles et des idées pour enrichir la communauté. Si vous avez des suggestions pour des discussions ou des événements, proposez-les !
-
-8. **Conséquences des Violations**  
-   Les violations des règles peuvent entraîner des discussions avec les membres concernés. En cas de comportements répétés ou graves, des mesures collectives peuvent être prises, allant d'un avertissement à une exclusion temporaire.
-
-9. **Évolution des Règles**  
-   Les règles peuvent être modifiées en fonction des besoins de la communauté. Les membres sont invités à proposer des changements et à participer.");
+        await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 });
 
 client.login(token);
-
-app.listen(3000, () => console.log('Serveur Express en écoute sur le port 3000'));
