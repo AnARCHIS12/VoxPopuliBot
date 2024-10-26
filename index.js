@@ -8,7 +8,8 @@ const app = express();
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers  // Ajout de l'intent pour les membres
     ]
 });
 
@@ -24,6 +25,29 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+// Fonction pour créer l'embed des règles
+function createRulesEmbed() {
+    return new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('**Règles du Serveur Anarchiste**')
+        .setDescription(`
+            1. **Liberté d'expression** : Chaque membre est libre de s'exprimer tant que cela ne nuit pas aux autres.
+            2. **Solidarité** : Soutenons-nous mutuellement dans nos luttes et aspirations.
+            3. **Égalité** : Chaque voix compte. Les décisions doivent être prises collectivement.
+            4. **Respect de la vie privée** : Protégeons les informations personnelles et respectons la vie privée de chacun.
+            5. **Participation active** : Engageons-nous dans les discussions et les activités du serveur.
+            6. **Refus de la violence** : La violence et l'intimidation n'ont pas leur place ici.
+            7. **Éducation et apprentissage** : Encourageons l'échange de connaissances et d'expériences.
+            8. **Responsabilité collective** : Chacun est responsable de maintenir un environnement sûr et inclusif.
+            9. **Autonomie** : Encourageons l'initiative individuelle tout en respectant le bien commun.
+            10. **Créativité** : Valorisons l'innovation et la créativité dans nos interactions et nos projets.
+        `)
+        .setFooter({ 
+            text: 'Vive l\'anarchie !', 
+            iconURL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Anarchy.svg/1024px-Anarchy.svg.png' 
+        });
+}
 
 // Système anti-veille amélioré
 function keepAlive() {
@@ -51,13 +75,17 @@ const sujetsAutomatiques = [
 ];
 
 const CONFIG_FILE = 'config.json';
-let config = { debateChannelId: null, pingChannelId: null };
+let config = { 
+    debateChannelId: null, 
+    pingChannelId: null,
+    rulesChannelId: null  // Ajout d'un canal pour les règles
+};
 
 if (fs.existsSync(CONFIG_FILE)) {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
 }
 
-// Slash commands configuration
+// Ajout de la commande pour configurer le canal des règles
 const commands = [
     {
         name: 'creerdebat',
@@ -105,6 +133,22 @@ const commands = [
         name: 'regles',
         description: 'Affiche les règles du serveur',
     },
+    {
+        name: 'configureregles',
+        description: 'Configure le salon pour l\'affichage automatique des règles',
+        options: [
+            {
+                name: 'canal',
+                type: 7,
+                description: 'Le salon à configurer pour les règles',
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'afficheregles',
+        description: 'Affiche les règles dans le canal actuel',
+    }
 ];
 
 const rest = new REST({ version: '10' }).setToken(token);
@@ -120,14 +164,36 @@ const rest = new REST({ version: '10' }).setToken(token);
     }
 })();
 
+// Gestion des nouveaux membres
+client.on('guildMemberAdd', async (member) => {
+    try {
+        // Envoie un message de bienvenue avec les règles en DM
+        await member.send({ 
+            content: `Bienvenue sur le serveur, ${member.user.username} ! Voici nos règles :`,
+            embeds: [createRulesEmbed()]
+        });
+
+        // Si un canal de règles est configuré, y envoyer aussi les règles
+        if (config.rulesChannelId) {
+            const rulesChannel = member.guild.channels.cache.get(config.rulesChannelId);
+            if (rulesChannel) {
+                await rulesChannel.send({
+                    content: `Bienvenue ${member} ! Voici les règles du serveur :`,
+                    embeds: [createRulesEmbed()]
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'envoi des règles:', error);
+    }
+});
+
 // Ready event handler
 client.on('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
     
-    // Démarre le système anti-veille
     keepAlive();
     
-    // Met un statut permanent
     client.user.setPresence({
         activities: [{ name: 'Veiller sur l\'anarchie', type: 'WATCHING' }],
         status: 'online'
@@ -155,28 +221,8 @@ client.on('interactionCreate', async (interaction) => {
 
     const { commandName } = interaction;
 
-    if (commandName === 'regles') {
-        const rulesEmbed = new EmbedBuilder()
-            .setColor('#FF0000')
-            .setTitle('**Règles du Serveur Anarchiste**')
-            .setDescription(`
-                1. **Liberté d'expression** : Chaque membre est libre de s'exprimer tant que cela ne nuit pas aux autres.
-                2. **Solidarité** : Soutenons-nous mutuellement dans nos luttes et aspirations.
-                3. **Égalité** : Chaque voix compte. Les décisions doivent être prises collectivement.
-                4. **Respect de la vie privée** : Protégeons les informations personnelles et respectons la vie privée de chacun.
-                5. **Participation active** : Engageons-nous dans les discussions et les activités du serveur.
-                6. **Refus de la violence** : La violence et l'intimidation n'ont pas leur place ici.
-                7. **Éducation et apprentissage** : Encourageons l'échange de connaissances et d'expériences.
-                8. **Responsabilité collective** : Chacun est responsable de maintenir un environnement sûr et inclusif.
-                9. **Autonomie** : Encourageons l'initiative individuelle tout en respectant le bien commun.
-                10. **Créativité** : Valorisons l'innovation et la créativité dans nos interactions et nos projets.
-            `)
-            .setFooter({ 
-                text: 'Vive l\'anarchie !', 
-                iconURL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Anarchy.svg/1024px-Anarchy.svg.png' 
-            });
-
-        await interaction.reply({ embeds: [rulesEmbed] });
+    if (commandName === 'regles' || commandName === 'afficheregles') {
+        await interaction.reply({ embeds: [createRulesEmbed()] });
     } else if (commandName === 'creerdebat') {
         const sujet = interaction.options.getString('sujet');
         const canal = interaction.options.getChannel('canal') || interaction.channel;
@@ -193,6 +239,14 @@ client.on('interactionCreate', async (interaction) => {
         config.pingChannelId = canal.id;
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
         await interaction.reply({ content: 'Canal de pings configuré avec succès !', ephemeral: true });
+    } else if (commandName === 'configureregles') {
+        const canal = interaction.options.getChannel('canal');
+        config.rulesChannelId = canal.id;
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+        await interaction.reply({ content: 'Canal des règles configuré avec succès !', ephemeral: true });
+        
+        // Affiche immédiatement les règles dans le nouveau canal
+        await canal.send({ embeds: [createRulesEmbed()] });
     }
 });
 
