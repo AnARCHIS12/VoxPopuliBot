@@ -236,7 +236,33 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply(`Salon pour les pings configuré sur ${canal}`);
 
     } else if (commandName === 'regles') {
-        await interaction.reply("Règles du serveur : Respectez les autres, soyez bienveillant, et participez de manière constructive.");
+        await interaction.reply("Règles du serveur 
+  : 1. **Respect Mutuel**  
+   Chaque membre doit traiter les autres avec respect. Les insultes, le harcèlement et les comportements agressifs ne seront pas tolérés. Si vous êtes témoin d'un comportement inapproprié, n'hésitez pas à en parler calmement à la personne concernée.
+
+2. **Liberté d'Expression**  
+   Chacun a le droit d'exprimer ses opinions. Les débats sont encouragés, mais ils doivent rester constructifs. Si une discussion devient trop tendue, proposez une pause ou un changement de sujet.
+
+3. **Confidentialité**  
+   Ne partagez pas d'informations personnelles sur vous-même ou sur les autres sans consentement explicite. Respectez la vie privée de chacun.
+
+4. **Pas de Spam**  
+   Évitez de publier des messages répétitifs ou non pertinents. Si vous voyez du spam, signalez-le à la communauté pour qu'elle puisse agir.
+
+5. **Thèmes Pertinents**  
+   Les discussions doivent rester centrées sur des sujets liés à l'anarchisme, à la politique, à la société et à la culture. Si un sujet dérive, n'hésitez pas à le ramener à l'ordre.
+
+6. **Responsabilité Collective**  
+   Chaque membre est responsable de l'atmosphère du serveur. Si vous remarquez un comportement inapproprié, parlez-en avec la personne concernée ou en discutez avec d'autres membres pour trouver une solution.
+
+7. **Éducation et Partage**  
+   Favorisez l'échange de connaissances. Partagez des ressources, des articles et des idées pour enrichir la communauté. Si vous avez des suggestions pour des discussions ou des événements, proposez-les !
+
+8. **Conséquences des Violations**  
+   Les violations des règles peuvent entraîner des discussions avec les membres concernés. En cas de comportements répétés ou graves, des mesures collectives peuvent être prises, allant d'un avertissement à une exclusion temporaire.
+
+9. **Évolution des Règles**  
+   Les règles peuvent être modifiées en fonction des besoins de la communauté. Les membres sont invités à proposer des changements et à participer.");
     }
 });
 
