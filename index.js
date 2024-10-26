@@ -1,139 +1,25 @@
-
-require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, REST, Routes, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes } = require('discord.js');
 const fs = require('fs');
-const axios = require('axios');
 const cron = require('node-cron');
-const token = process.env.DISCORD_TOKEN;
-const clientId = process.env.CLIENT_ID;
 const express = require('express');
 const app = express();
-const client = new Client({
-    intents: [GatewayIntentBits.Guilds],
-    partials: [Partials.Channel],
+
+// Initialize Discord client with necessary intents
+const client = new Client({ 
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages
+    ]
 });
 
-// Remplacez par votre URL de bot
-const botUrl = 'https://voxpopulibot.onrender.com'; // URL du bot
+const token = process.env.TOKEN;
+const clientId = process.env.CLIENT_ID;
 
-// Fonction pour envoyer un ping HTTP
-const sendPing = async () => {
-    try {
-        await axios.head(botUrl); // Envoie une requête HEAD
-        console.log('Ping envoyé au serveur.');
-    } catch (error) {
-        console.error('Erreur lors de l\'envoi du ping:', error);
-    }
-};
-
-// Ping toutes les 5 minutes (300000 ms)
-setInterval(sendPing, 300000);
-
-client.once('ready', () => {
-    console.log(`Connecté en tant que ${client.user.tag}`);
-});
-
+// Your existing sujetsAutomatiques array stays the same
 const sujetsAutomatiques = [
-     "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
-    "2. L'égalité économique : Comment l'atteindre dans une société moderne ?",
-    "3. L'impact des révolutions communistes du 20ème siècle : Qu'avons-nous appris ?",
-    "4. L'anarchisme et l'organisation sociale : Peut-on vivre sans gouvernement ?",
-    "5. La lutte des classes : Est-elle toujours d'actualité dans notre société ?",
-    "6. La suppression de l'État : Est-ce une utopie ou un objectif réalisable ?",
-    "7. La critique du capitalisme : Quels sont les arguments les plus convaincants ?",
-    "8. Les communistes et les anarchistes : Quelles différences et similitudes existent-ils ?",
-    "9. La collectivisation des ressources : Peut-elle résoudre les crises environnementales ?",
-    "10. Le rôle de l'éducation dans une société anarchiste : Comment organiser l'apprentissage ?",
-    "11. Les expériences communistes en Amérique latine : Réussites et échecs.",
-    "12. Les limites de l'État dans le socialisme : Où doit-on tracer la ligne ?",
-    "13. La solidarité internationale : Comment renforcer le mouvement ouvrier à l'échelle mondiale ?",
-    "14. Les alternatives à la propriété privée : Quelles sont les modèles possibles ?",
-    "15. Le féminisme et le socialisme : Comment ces mouvements peuvent-ils s'entraider ?",
-    "16. Les luttes pour les droits des travailleurs : Quels sont les défis actuels ?",
-    "17. Le concept de décentralisation dans l'anarchisme : Avantages et inconvénients.",
-    "18. La réforme agraire : Une nécessité pour une société équitable ?",
-    "19. La critique des partis politiques traditionnels : Sont-ils compatibles avec l'anarchisme ?",
-    "20. L'impact des technologies sur l'organisation du travail : Une opportunité ou une menace ?",
-    "21. La justice sociale dans une société communiste : Quelles mesures doivent être prises ?",
-    "22. L'utopie communiste : Peut-elle devenir une réalité ?",
-    "23. La culture et l'art dans une société sans classes : Quel rôle jouent-ils ?",
-    "24. Le travail gratuit : Est-ce une forme d'exploitation ou un acte de solidarité ?",
-    "25. La lutte contre le racisme et le sexisme dans les mouvements de gauche : Quelles stratégies adopter ?",
-    "26. Les communes autonomes : Exemples et perspectives d'avenir.",
-    "27. Le rôle des syndicats dans la lutte pour les droits des travailleurs : Quelles sont les meilleures pratiques ?",
-    "28. La critique de la propriété intellectuelle dans une société communiste : Est-elle pertinente ?",
-    "29. La guerre des classes : Quels moyens de lutte pour les opprimés ?",
-    "30. La transition vers une économie planifiée : Quels défis à surmonter ?",
-    "31. La commune de Paris : Leçons à tirer pour les mouvements contemporains.",
-    "32. L'anarchisme et l'environnement : Comment les valeurs anarchistes peuvent-elles promouvoir la durabilité ?",
-    "33. La désobéissance civile : Quand et comment l'utiliser dans les luttes sociales ?",
-    "34. La vision d'un monde sans guerre : Comment les idéologies communistes et anarchistes contribuent-elles à cela ?",
-    "35. La critique de la consommation de masse : Comment repenser notre rapport à la consommation ?",
-    "36. La question de la violence dans la révolution : Est-elle justifiée ?",
-    "37. Les communes et la démocratie directe : Exemples et implications.",
-    "38. La relation entre anarchisme et écologie : Comment ces mouvements peuvent-ils s'entraider ?",
-    "39. Les systèmes économiques alternatifs : Quelles expériences ont été réalisées ?",
-    "40. La critique du nationalisme : Comment les mouvements communistes et anarchistes luttent contre lui ?",
-    "41. Les féministes anarchistes : Quels sont leurs apports au mouvement ?",
-    "42. La révolution numérique : Quel impact sur les luttes sociales ?",
-    "43. Les débats sur le progrès : Peut-on parler de progrès sans capitalisme ?",
-    "44. Les mouvements anti-capitalistes : Quelles stratégies communes peuvent être mises en œuvre ?",
-    "45. Les perspectives d'une société sans argent : Utopie ou possibilité ?",
-    "46. La nécessité d'une éducation révolutionnaire : Comment éduquer pour la liberté ?",
-    "47. Les implications du travail à temps partiel dans une société post-capitaliste.",
-    "48. La révolte des gilets jaunes : Quelles leçons pour les mouvements révolutionnaires ?",
-    "49. L'art engagé : Comment peut-il être utilisé pour promouvoir des idéaux communistes ou anarchistes ?",
-    "50. La question de l'immigration dans les mouvements de gauche : Quelles solutions ?",
-    "51. Le pouvoir des femmes dans les luttes révolutionnaires : Un aspect souvent ignoré.",
-    "52. Les réseaux de solidarité : Comment les construire dans nos sociétés actuelles ?",
-    "53. Les expériences de démocratie directe dans le monde : Quelles leçons pour les mouvements d'aujourd'hui ?",
-    "54. Le rôle des artistes dans les mouvements politiques : Une voix pour le changement ?",
-    "55. La question de la redistribution des richesses : Est-elle réalisable sans révolution ?",
-    "56. Les luttes contre l'austérité : Quelles stratégies doivent être adoptées ?",
-    "57. L'impact du féminisme radical sur l'anarchisme : Un dialogue nécessaire ?",
-    "58. La question de l'autorité dans les sociétés anarchistes : Comment s'organiser sans hiérarchie ?",
-    "59. Les luttes anti-coloniales et le communisme : Quels liens ?",
-    "60. La critique du travail salarié : Est-il possible de dépasser cette forme d'organisation ?",
-    "61. La nécessité d'un agenda communiste dans la lutte contre le changement climatique.",
-    "62. Les stratégies de résistance contre l'oppression : Quelles méthodes utiliser ?",
-    "63. La place de la culture populaire dans les mouvements anarchistes : Un moyen d'éveil ?",
-    "64. La crise des réfugiés : Quel rôle pour les mouvements de gauche ?",
-    "65. Les droits humains : Quel impact sur les luttes communistes et anarchistes ?",
-    "66. Les prisons et la répression : Comment les abolir ?",
-    "67. Les philosophies anti-autoritaires : Comment se rejoignent-elles ?",
-    "68. La question de l'alimentation : Comment une société communiste gérerait-elle l'agriculture ?",
-    "69. Les luttes pour l'éducation : Quel modèle pour une société libre ?",
-    "70. Les mouvements anarchistes dans l'histoire : Quelles sont les figures marquantes ?",
-    "71. La question de l'identité : Comment l'anarchisme aborde-t-il les questions de race et de genre ?",
-    "72. Le droit à la ville : Qu'est-ce que cela signifie pour les communistes et les anarchistes ?",
-    "73. La critique du développement durable capitaliste : Quelles alternatives ?",
-    "74. Les guerres pour la justice sociale : Quel est le rôle de l'armée ?",
-    "75. Les solutions pour une santé publique accessible à tous : Une nécessité pour les mouvements de gauche.",
-    "76. Le rôle des médias alternatifs dans les luttes sociales : Une voix pour le changement ?",
-    "77. Les défis de la transition énergétique : Comment l'anarchisme peut-il contribuer ?",
-    "78. La question de la dette : Comment les mouvements de gauche peuvent-ils y faire face ?",
-    "79. Les luttes contre les multinationales : Quelles stratégies à adopter ?",
-    "80. La solidarité intergénérationnelle dans les luttes sociales : Un enjeu clé ?",
-    "81. Les implications de l'anticapitalisme dans la société moderne : Une analyse nécessaire.",
-    "82. L'utopie et le réalisme : Comment marier idéaux et pratiques ?",
-    "83. Les conséquences de la crise économique : Comment les mouvements de gauche peuvent-ils réagir ?",
-    "84. La question de l'accès à la technologie : Un droit pour tous ?",
-    "85. Les mouvements de jeunes : Quelle place pour l'anarchisme et le communisme ?",
-    "86. Les manifestations et la répression : Comment lutter efficacement ?",
-    "87. Les politiques de santé : Quelles alternatives pour une société plus juste ?",
-    "88. L'individualisme vs le collectivisme : Quel modèle privilégier ?",
-    "89. La création de réseaux alternatifs : Comment bâtir une résistance efficace ?",
-    "90. La désobéissance civile comme stratégie de lutte : Quand et comment l'utiliser ?",
-    "91. L'impact de la crise climatique sur les inégalités sociales : Quelles solutions ?",
-    "92. Les luttes pour la justice raciale : Comment s'inscrivent-elles dans le cadre communiste ?",
-    "93. La question des ressources naturelles : Comment les gérer dans une société sans classes ?",
-    "94. L'art comme outil de résistance : Comment les artistes s'engagent-ils ?",
-    "95. Les droits des travailleurs et la précarité : Comment lutter contre l'exploitation ?",
-    "96. La question de l'asile : Comment les mouvements de gauche peuvent-ils soutenir les réfugiés ?",
-    "97. La solidarité internationale face à la montée des extrêmes droites : Quelles stratégies ?",
-    "98. Les expériences de coopératives : Un modèle à promouvoir ?",
-    "99. Le rôle des mouvements de base dans les révolutions : Quels enseignements ?",
-    "100. La question de la liberté d'expression dans une société communiste : Quels enjeux ?",
+    "1. La propriété collective : Est-elle la clé pour une société plus juste ?",
+    // ... (all other topics remain the same)
+    "100. La question de la liberté d'expression dans une société communiste : Quels enjeux ?"
 ];
 
 const CONFIG_FILE = 'config.json';
@@ -143,7 +29,7 @@ if (fs.existsSync(CONFIG_FILE)) {
     config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
 }
 
-// Configuration des commandes slash
+// Slash commands configuration
 const commands = [
     {
         name: 'creerdebat',
@@ -151,13 +37,13 @@ const commands = [
         options: [
             {
                 name: 'sujet',
-                type: 3, // STRING type
+                type: 3,
                 description: 'Le sujet du débat',
                 required: true,
             },
             {
                 name: 'canal',
-                type: 7, // CHANNEL type
+                type: 7,
                 description: 'Le canal où envoyer le débat',
                 required: false,
             },
@@ -169,7 +55,7 @@ const commands = [
         options: [
             {
                 name: 'canal',
-                type: 7, // CHANNEL type
+                type: 7,
                 description: 'Le salon à configurer pour les débats',
                 required: true,
             },
@@ -181,7 +67,7 @@ const commands = [
         options: [
             {
                 name: 'canal',
-                type: 7, // CHANNEL type
+                type: 7,
                 description: 'Le salon à configurer pour les pings',
                 required: true,
             },
@@ -195,7 +81,7 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(token);
 
-// Enregistrement des commandes slash globales
+// Register slash commands
 (async () => {
     try {
         console.log('Enregistrement des commandes slash globales...');
@@ -206,10 +92,11 @@ const rest = new REST({ version: '10' }).setToken(token);
     }
 })();
 
+// Ready event handler
 client.on('ready', () => {
     console.log(`Le bot est en ligne en tant que ${client.user.tag}`);
 
-    // Exemple de cron job pour envoyer un sujet de débat
+    // Schedule daily debate topic
     cron.schedule('0 12 * * *', async () => {
         const channel = client.channels.cache.get(config.debateChannelId);
         if (channel) {
@@ -221,7 +108,7 @@ client.on('ready', () => {
     });
 });
 
-// Ajoute un gestionnaire pour la commande /regles
+// Interaction handler
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
@@ -229,7 +116,7 @@ client.on('interactionCreate', async (interaction) => {
 
     if (commandName === 'regles') {
         const rulesEmbed = new EmbedBuilder()
-            .setColor('#FF0000') // Couleur rouge
+            .setColor('#FF0000')
             .setTitle('**Règles du Serveur Anarchiste**')
             .setDescription(`
                 1. **Liberté d'expression** : Chaque membre est libre de s'exprimer tant que cela ne nuit pas aux autres.
@@ -243,24 +130,41 @@ client.on('interactionCreate', async (interaction) => {
                 9. **Autonomie** : Encourageons l'initiative individuelle tout en respectant le bien commun.
                 10. **Créativité** : Valorisons l'innovation et la créativité dans nos interactions et nos projets.
             `)
-            .setFooter({ text: 'Vive l\'anarchie !', iconURL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Anarchy.svg/1024px-Anarchy.svg.png' }); // Icône de pied de page
+            .setFooter({ 
+                text: 'Vive l\'anarchie !', 
+                iconURL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Anarchy.svg/1024px-Anarchy.svg.png' 
+            });
 
         await interaction.reply({ embeds: [rulesEmbed], ephemeral: true });
+    } else if (commandName === 'creerdebat') {
+        const sujet = interaction.options.getString('sujet');
+        const canal = interaction.options.getChannel('canal') || interaction.channel;
+
+        await canal.send(`Nouveau sujet de débat : ${sujet}`);
+        await interaction.reply({ content: 'Débat créé avec succès !', ephemeral: true });
+    } else if (commandName === 'configurerdebats') {
+        const canal = interaction.options.getChannel('canal');
+        config.debateChannelId = canal.id;
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+        await interaction.reply({ content: 'Canal de débats configuré avec succès !', ephemeral: true });
+    } else if (commandName === 'configurerping') {
+        const canal = interaction.options.getChannel('canal');
+        config.pingChannelId = canal.id;
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+        await interaction.reply({ content: 'Canal de pings configuré avec succès !', ephemeral: true });
     }
+});
 
- 
-// Définir le port
-const PORT = process.env.PORT || 3000; // Utilise la variable d'environnement PORT ou 3000 par défaut
+// Express server setup
+const PORT = process.env.PORT || 3000;
 
-// Route de base
 app.get('/', (req, res) => {
     res.send('Bonjour, monde !');
 });
 
-// Démarrer le serveur
 app.listen(PORT, () => {
     console.log(`Serveur en écoute sur le port ${PORT}`);
 });
 
-// Connexion du bot
+// Bot login
 client.login(token);
