@@ -30,7 +30,7 @@ app.listen(PORT, () => {
 function createRulesEmbed() {
     return new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('**ⒶRègles De la ligne noireⒶ **')
+        .setTitle('**ⒶRègles De Lacommuneautogérée Ⓐ **')
         .setDescription(`
             1. **Liberté d'expression** : Chaque membre est libre de s'exprimer tant que cela ne nuit pas aux autres.
             2. **Solidarité** : Soutenons-nous mutuellement dans nos luttes et aspirations.
