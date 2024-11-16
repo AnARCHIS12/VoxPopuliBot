@@ -32,7 +32,7 @@ function createRulesEmbed() {
         .setColor('#FF0000')
         .setTitle('**ⒶRègles De Lacommuneautogérée Ⓐ **')
         .setDescription(`
-            1. **Liberté d'expression** : Chaque membre est libre de s'exprimer, dans le respect de l'autonomie de chacun, sans entrave ni hiérarchie, tant que cela ne porte pas atteinte à la liberté et à l'égalité des autres.
+            1. **Liberté d'expression** : Chacun est libre de s'exprimer, dans le respect de l'autonomie de tous, sans entrave ni hiérarchie, tant que cela ne porte pas atteinte à la liberté et à l'égalité des autres
             2. **Solidarité** : Soutenons-nous mutuellement dans nos luttes et aspirations.
             3. **Égalité** : Chaque voix compte. Les décisions doivent être prises collectivement.
             4. **Respect de la vie privée** : Protégeons les informations personnelles et respectons la vie privée de chacun.
