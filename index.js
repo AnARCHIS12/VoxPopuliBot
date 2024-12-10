@@ -42,7 +42,7 @@ function createRulesEmbed() {
             8. **Responsabilité collective** : Chacun est responsable de maintenir un environnement sûr et inclusif.
             9. **Autonomie et collectif ** : Encourageons l'initiative individuelle et collectif tout en respectant le bien commun.
             10. **Créativité** : Valorisons l'innovation et la créativité dans nos interactions et nos projets.
-            11. **satanisme** : ne doit pas etre mis en avant sinon ban sous vote immediat!
+            
         `)
         .setFooter({ 
             text: 'Vive l\'anarchie !', 
