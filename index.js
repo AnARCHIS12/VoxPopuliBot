@@ -71,10 +71,10 @@ function createRulesEmbed() {
             + POUR L'ÉMANCIPATION TOTALE ET LA LIBERTÉ COLLECTIVE
             \`\`\`
         `)
-        .setImage('https://cdn.discordapp.com/attachments/1322571993601540139/1324379930628198451/AE9D586C-8BF2-4B5E-95A5-4631609CB79C.png?ex=6777f06d&is=67769eed&hm=3bc16782c9d73f0929bf26b571326df0baade1f6c71f968b8cc7a9c68189f098&')
+        .setImage('https://cdn.discordapp.com/attachments/1330606622887645304/1330613413528862761/UNION_ANARCHISTE2.png?ex=678e9dcf&is=678d4c4f&hm=b43747d7fd7941b9d3438ff424b454b3f291f9e36c452d18b6e0849f22fda08b&')
         .setFooter({ 
             text: '✊ NO PASARAN! La révolution sera numérique ou ne sera pas! ✊', 
-            iconURL: 'https://cdn.discordapp.com/attachments/1322571993601540139/1324379930628198451/AE9D586C-8BF2-4B5E-95A5-4631609CB79C.png?ex=6777f06d&is=67769eed&hm=3bc16782c9d73f0929bf26b571326df0baade1f6c71f968b8cc7a9c68189f098&' 
+            iconURL: 'https://cdn.discordapp.com/attachments/1330606622887645304/1330613413528862761/UNION_ANARCHISTE2.png?ex=678e9dcf&is=678d4c4f&hm=b43747d7fd7941b9d3438ff424b454b3f291f9e36c452d18b6e0849f22fda08b&' 
         })
         .setTimestamp();
 }
